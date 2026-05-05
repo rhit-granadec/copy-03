@@ -8,6 +8,4 @@ crops/
 __pycache__/
 playing-cards-object-detection-dataset.zip
 
-runs/
-.ipynb_checkpoints/
 BlackjackYOLODemo/
