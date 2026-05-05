@@ -1,0 +1,1883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Blackjack — Bot Target</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a6b35;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    user-select: none;
+  }
+  h1 { margin: 12px 0 4px; font-size: 22px; letter-spacing: 2px; opacity: 0.7; }
+
+  /* ── Table layout ─────────────────────────────────────── */
+  #table {
+    width: 820px;
+    height: 520px;
+    position: relative;
+    border: 3px solid rgba(255,255,255,0.15);
+    border-radius: 180px;
+    margin: 10px auto;
+    background: radial-gradient(ellipse at center, #1e8745 0%, #145a2e 100%);
+  }
+
+  /* Card zones */
+  .zone {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    min-height: 150px;
+  }
+  #dealer-zone { top: 40px; }
+  #player-zone { bottom: 40px; }
+
+  .zone-label {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 13px;
+    opacity: 0.5;
+    letter-spacing: 1px;
+  }
+  #dealer-label { top: 18px; }
+  #player-label { bottom: 18px; }
+
+  /* ── Cards ────────────────────────────────────────────── */
+  .card {
+    width: 100px;
+    height: 143px;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 2px 3px 8px rgba(0,0,0,0.4);
+    position: relative;
+    transition: transform 0.3s;
+  }
+  .card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    display: block;
+  }
+  .card.facedown {
+    background: repeating-linear-gradient(
+      45deg, #1a3a7a, #1a3a7a 5px, #1e4490 5px, #1e4490 10px
+    );
+    border: 2px solid #0e2654;
+  }
+
+  /* ── Totals ───────────────────────────────────────────── */
+  .total-badge {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.65);
+    padding: 3px 14px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: bold;
+  }
+  #dealer-total { top: 200px; }
+  #player-total { bottom: 200px; }
+
+  /* ── Info bar ─────────────────────────────────────────── */
+  #info {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 26px;
+    font-weight: bold;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.4s;
+    pointer-events: none;
+  }
+  #info.show { opacity: 1; }
+
+  /* ── Controls ─────────────────────────────────────────── */
+  #controls {
+    display: flex;
+    gap: 12px;
+    margin: 10px 0 20px;
+  }
+  button {
+    padding: 12px 32px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: background 0.15s, transform 0.1s;
+  }
+  button:active { transform: scale(0.96); }
+  button:disabled { opacity: 0.35; cursor: default; transform: none; }
+  #btn-deal   { background: #f1c40f; color: #333; }
+  #btn-hit    { background: #27ae60; color: #fff; }
+  #btn-stand  { background: #e74c3c; color: #fff; }
+  #btn-double { background: #8e44ad; color: #fff; }
+
+  #score-bar {
+    font-size: 14px;
+    opacity: 0.6;
+    margin-bottom: 10px;
+  }
+
+  /* ── Betting UI ──────────────────────────────────────── */
+  #betting-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 6px 0 8px;
+    padding: 10px 24px;
+    background: rgba(0,0,0,0.45);
+    border-radius: 8px;
+    font-size: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  #betting-bar .bet-label { opacity: 0.6; margin-right: 4px; }
+  #betting-bar .bet-value { font-weight: bold; font-size: 18px; color: #f1c40f; }
+  #bet-input {
+    width: 80px;
+    padding: 6px 10px;
+    font-size: 16px;
+    border: 2px solid #f1c40f;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.4);
+    color: #fff;
+    text-align: center;
+    font-weight: bold;
+  }
+  #bet-input:focus { outline: none; border-color: #2ecc71; }
+  .bet-chip {
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: bold;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .bet-chip:hover { background: rgba(255,255,255,0.15); border-color: #f1c40f; }
+  .bet-chip.active { background: #f1c40f; color: #333; border-color: #f1c40f; }
+  #suggested-bet {
+    font-size: 12px;
+    opacity: 0.7;
+    color: #2ecc71;
+  }
+
+  /* ── Bot overlay canvas ────────────────────────────────── */
+  #overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 820px;
+    height: 520px;
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  /* ── Bot HUD ────────────────────────────────────────────── */
+  #bot-hud {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin: 6px 0 14px;
+    padding: 10px 24px;
+    background: rgba(0,0,0,0.55);
+    border-radius: 8px;
+    font-size: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  #bot-hud .hud-item { white-space: nowrap; }
+  #bot-hud .hud-label { opacity: 0.6; margin-right: 4px; }
+  #bot-hud .hud-sublabel { opacity: 0.4; font-size: 10px; display: block; margin-top: -2px; }
+  #bot-hud .hud-value { font-weight: bold; font-size: 16px; }
+  #bot-hud button {
+    padding: 6px 16px;
+    font-size: 13px;
+    border-radius: 4px;
+  }
+  #btn-start-bot { background: #2ecc71; color: #fff; min-width: 110px; }
+  #btn-start-bot.running { background: #f39c12; }
+  #btn-start-bot.paused { background: #3498db; }
+  #btn-stop-bot { background: #e74c3c; color: #fff; display: none; padding: 6px 12px; font-size: 13px; border-radius: 4px; }
+  #btn-reset-count { background: #3498db; color: #fff; }
+
+  /* ── Speed Controls (fixed, bottom right above art toggle) ── */
+  #speed-controls {
+    position: fixed;
+    bottom: 62px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: rgba(0,0,0,0.7);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    z-index: 500;
+  }
+  .speed-btn {
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: bold;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    letter-spacing: 1px;
+    transition: background 0.15s;
+  }
+  .speed-btn:hover { background: rgba(255,255,255,0.18); }
+  #speed-display {
+    font-weight: bold;
+    font-size: 14px;
+    color: #f1c40f;
+    min-width: 40px;
+    text-align: center;
+  }
+
+  /* ── Art Toggle (bottom right) ───────────────────────────── */
+  #art-toggle {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: rgba(0,0,0,0.7);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    font-size: 13px;
+    z-index: 500;
+  }
+  #art-toggle .toggle-label { opacity: 0.6; font-weight: bold; letter-spacing: 1px; }
+  #art-toggle .toggle-switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: #2ecc71;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  #art-toggle .toggle-switch.old { background: #e67e22; }
+  #art-toggle .toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    transition: left 0.2s;
+  }
+  #art-toggle .toggle-switch.old::after { left: 23px; }
+  #art-toggle .toggle-art-label {
+    font-weight: bold;
+    min-width: 70px;
+  }
+  #art-toggle .toggle-art-label.current { color: #2ecc71; }
+  #art-toggle .toggle-art-label.old { color: #e67e22; }
+
+  /* Pipeline status badges */
+  .hud-status {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+  }
+  .hud-status.ready { background: #27ae60; color: #fff; }
+  .hud-status.computing { background: #f39c12; color: #fff; }
+  .hud-status.idle { background: #555; color: #aaa; }
+  .hud-status.scanning { background: #e67e22; color: #fff; }
+  .hud-status.done { background: #2ecc71; color: #fff; }
+  .hud-status.error { background: #e74c3c; color: #fff; }
+
+  /* ── Model Perception Panel ────────────────────────────── */
+  #model-section {
+    width: 860px;
+    margin: 10px 0 20px;
+    text-align: center;
+  }
+  #model-section h2 {
+    font-size: 18px;
+    letter-spacing: 2px;
+    opacity: 1;
+    color: #f1c40f;
+    margin-bottom: 6px;
+  }
+  #model-view-wrap {
+    position: relative;
+    display: inline-block;
+    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  #model-view-wrap.flash { border-color: #2ecc71; }
+  #model-view {
+    display: block;
+    background: #111;
+  }
+  #detection-readout {
+    margin-top: 6px;
+    font-size: 14px;
+    font-family: monospace;
+    opacity: 0.85;
+    min-height: 18px;
+  }
+
+  /* ── Detection List ────────────────────────────────────── */
+  #detection-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 10px;
+    min-height: 20px;
+  }
+  .det-card {
+    background: rgba(0,0,0,0.5);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-family: monospace;
+    border-left: 4px solid #555;
+    text-align: left;
+    min-width: 120px;
+  }
+  .det-card.dealer { border-left-color: #f39c12; }
+  .det-card.player { border-left-color: #2ecc71; }
+  .det-card .det-name { font-weight: bold; font-size: 15px; }
+  .det-card .det-conf { opacity: 0.7; }
+  .det-card .det-zone { opacity: 0.5; font-size: 11px; }
+  .det-card .det-pass { color: #e67e22; font-size: 11px; font-weight: bold; }
+
+  /* Decision source badge */
+  .hud-status.model { background: #2ecc71; color: #fff; }
+  .hud-status.fallback { background: #e74c3c; color: #fff; }
+
+  /* ── Summary Modal ──────────────────────────────────── */
+  #summary-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+  }
+  #summary-modal {
+    background: #1a2a1a;
+    border: 2px solid #2ecc71;
+    border-radius: 12px;
+    padding: 28px 36px;
+    max-width: 560px;
+    width: 90%;
+    color: #fff;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  }
+  #summary-modal h2 {
+    font-size: 20px;
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+    color: #f1c40f;
+  }
+  .summary-result {
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 4px;
+  }
+  .summary-result.win { color: #2ecc71; }
+  .summary-result.loss { color: #e74c3c; }
+  .summary-result.push { color: #f39c12; }
+  .summary-totals {
+    font-size: 14px;
+    opacity: 0.7;
+    margin-bottom: 16px;
+  }
+  .summary-section {
+    margin: 12px 0;
+    text-align: left;
+  }
+  .summary-section h3 {
+    font-size: 12px;
+    letter-spacing: 2px;
+    opacity: 0.5;
+    margin-bottom: 6px;
+  }
+  .summary-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .summary-card-tile {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 15px;
+    font-weight: bold;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .summary-card-tile.detected { border-color: #2ecc71; }
+  .summary-card-tile.missed { border-color: #e74c3c; }
+  .summary-card-tile.false-pos { border-color: #e67e22; background: rgba(230,126,34,0.15); }
+  .summary-card-tile .check { color: #2ecc71; }
+  .summary-card-tile .miss { color: #e74c3c; }
+  .summary-stats {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    font-size: 13px;
+    opacity: 0.85;
+    line-height: 1.8;
+  }
+  #btn-summary-continue {
+    margin-top: 18px;
+    padding: 10px 40px;
+    font-size: 16px;
+    background: #2ecc71;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+  #btn-summary-continue:hover { background: #27ae60; }
+
+  /* ── Demo notification bar ───────────────────────────── */
+  #demo-notify {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10000;
+    background: linear-gradient(135deg, #e67e22, #d35400);
+    color: #fff;
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-align: center;
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+  #demo-notify.visible {
+    transform: translateY(0);
+  }
+  #demo-notify .notify-detail {
+    font-weight: normal;
+    font-size: 13px;
+    opacity: 0.9;
+    margin-top: 2px;
+  }
+  #demo-notify .notify-hint {
+    font-weight: normal;
+    font-size: 11px;
+    opacity: 0.6;
+    margin-top: 4px;
+    letter-spacing: 0;
+  }
+</style>
+</head>
+<body>
+
+<div id="demo-notify"></div>
+
+<h1>&#9824; BLACKJACK &#9824;</h1>
+
+<div id="table">
+  <div class="zone-label" id="dealer-label">DEALER</div>
+  <div class="zone" id="dealer-zone"></div>
+  <div class="total-badge" id="dealer-total"></div>
+
+  <div id="info"></div>
+
+  <div class="total-badge" id="player-total"></div>
+  <div class="zone" id="player-zone"></div>
+  <div class="zone-label" id="player-label">PLAYER</div>
+  <canvas id="overlay" width="820" height="520"></canvas>
+</div>
+
+<div id="controls">
+  <button id="btn-deal">DEAL</button>
+  <button id="btn-hit" disabled>HIT</button>
+  <button id="btn-stand" disabled>STAND</button>
+  <button id="btn-double" disabled>DOUBLE</button>
+</div>
+
+<div id="betting-bar">
+  <span><span class="bet-label">Bankroll:</span><span class="bet-value" id="bankroll-display">$1000</span></span>
+  <span><span class="bet-label">Bet:</span> $<input id="bet-input" type="number" min="10" max="500" step="10" value="10"></span>
+  <span class="bet-chip" data-bet="10">$10</span>
+  <span class="bet-chip" data-bet="25">$25</span>
+  <span class="bet-chip" data-bet="50">$50</span>
+  <span class="bet-chip" data-bet="100">$100</span>
+  <span><span class="bet-label">Current Bet:</span><span class="bet-value" id="current-bet-display">$10</span></span>
+  <span id="suggested-bet"></span>
+</div>
+
+<div id="score-bar">Wins: <span id="wins">0</span> &nbsp;|&nbsp; Losses: <span id="losses">0</span> &nbsp;|&nbsp; Pushes: <span id="pushes">0</span> &nbsp;|&nbsp; Net: <span id="net-profit">$0</span></div>
+
+<div id="bot-hud">
+  <button id="btn-start-bot">START BOT</button>
+  <button id="btn-stop-bot">STOP</button>
+  <button id="btn-reset-count">RESET COUNT</button>
+  <div class="hud-item">
+    <span class="hud-label">Strategy Action:</span><span class="hud-value" id="hud-action">&mdash;</span>
+    <span class="hud-sublabel">from model detections</span>
+  </div>
+  <div class="hud-item"><span class="hud-label">Strategy:</span><span class="hud-status ready" id="hud-strategy">READY</span></div>
+  <div class="hud-item"><span class="hud-label">YOLO:</span><span class="hud-status idle" id="hud-yolo">IDLE</span></div>
+  <div class="hud-item"><span class="hud-label">Source:</span><span class="hud-status idle" id="hud-source">&mdash;</span></div>
+  <div class="hud-item"><span class="hud-label">Dealer:</span><span class="hud-value" id="hud-dealer">&mdash;</span></div>
+  <div class="hud-item"><span class="hud-label">Player:</span><span class="hud-value" id="hud-player">&mdash;</span></div>
+  <div class="hud-item"><span class="hud-label">Running:</span><span class="hud-value" id="hud-running">0</span></div>
+  <div class="hud-item"><span class="hud-label">True:</span><span class="hud-value" id="hud-true">0.0</span></div>
+  <div class="hud-item"><span class="hud-label">Seen:</span><span class="hud-value" id="hud-seen">0</span></div>
+  <div class="hud-item"><span class="hud-label">Bet Units:</span><span class="hud-value" id="hud-bet-units">1</span></div>
+</div>
+
+<div id="model-section">
+  <h2>MODEL PERCEPTION</h2>
+  <div id="model-view-wrap">
+    <canvas id="model-view" width="820" height="520"></canvas>
+  </div>
+  <div id="detection-readout">Waiting for bot...</div>
+  <div id="detection-list"></div>
+</div>
+
+<div id="speed-controls">
+  <button class="speed-btn" id="btn-slow">&#9664; SLOW</button>
+  <span id="speed-display">1.0x</span>
+  <button class="speed-btn" id="btn-fast">FAST &#9654;</button>
+</div>
+
+<div id="art-toggle">
+  <span class="toggle-label">CARD ART</span>
+  <div class="toggle-switch" id="art-switch"></div>
+  <span class="toggle-art-label current" id="art-label">Training Set</span>
+</div>
+
+<script>
+// ── Deck & helpers ─────────────────────────────────────────────────
+const SUITS = ['\u2660','\u2665','\u2666','\u2663'];
+const SUIT_CODES = ['s','h','d','c'];
+const RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+
+// ── URL parameters ────────────────────────────────────────────────
+const _params = new URLSearchParams(window.location.search);
+const GAME_SEED = _params.has('seed') ? parseInt(_params.get('seed'), 10) : null;
+let BOT_SPEED = Math.max(0.25, Math.min(10, parseFloat(_params.get('speed')) || 1));
+
+// ── Seeded PRNG (mulberry32) ──────────────────────────────────────
+function _mulberry32(a) {
+  return function() {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const _rng = GAME_SEED !== null ? _mulberry32(GAME_SEED) : () => Math.random();
+if (GAME_SEED !== null) console.log(`[game] Seeded with: ${GAME_SEED}`);
+console.log(`[game] Bot speed multiplier: ${BOT_SPEED}x (use ?speed=N to change)`);
+
+function makeDeck(n = 6) {
+  let deck = [];
+  for (let d = 0; d < n; d++)
+    for (let s = 0; s < 4; s++)
+      for (let r = 0; r < 13; r++)
+        deck.push({ rank: RANKS[r], suit: SUITS[s], suitCode: SUIT_CODES[s] });
+  return shuffle(deck);
+}
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(_rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function cardValue(rank) {
+  if ('JQK'.includes(rank)) return 10;
+  if (rank === 'A') return 11;
+  return parseInt(rank);
+}
+
+function handTotal(cards) {
+  let total = cards.reduce((s, c) => s + cardValue(c.rank), 0);
+  let aces = cards.filter(c => c.rank === 'A').length;
+  while (total > 21 && aces > 0) { total -= 10; aces--; }
+  return total;
+}
+
+function isRed(suit) { return suit === '\u2665' || suit === '\u2666'; }
+
+// ── State ──────────────────────────────────────────────────────────
+let shoe = makeDeck(1);
+let dealer = [], player = [];
+let gameOver = true;
+let stats = { wins: 0, losses: 0, pushes: 0 };
+let bankroll = 1000;
+let currentBet = 10;
+let doubled = false;
+
+const $dealerZone = document.getElementById('dealer-zone');
+const $playerZone = document.getElementById('player-zone');
+const $dealerTotal = document.getElementById('dealer-total');
+const $playerTotal = document.getElementById('player-total');
+const $info = document.getElementById('info');
+const $deal = document.getElementById('btn-deal');
+const $hit = document.getElementById('btn-hit');
+const $stand = document.getElementById('btn-stand');
+const $double = document.getElementById('btn-double');
+const $betInput = document.getElementById('bet-input');
+const $bankrollDisplay = document.getElementById('bankroll-display');
+const $currentBetDisplay = document.getElementById('current-bet-display');
+const $suggestedBet = document.getElementById('suggested-bet');
+const $netProfit = document.getElementById('net-profit');
+
+// ── Betting helpers ────────────────────────────────────────────────
+function updateBankrollDisplay() {
+  $bankrollDisplay.textContent = '$' + bankroll;
+  $bankrollDisplay.style.color = bankroll >= 1000 ? '#2ecc71' : bankroll > 0 ? '#f1c40f' : '#e74c3c';
+  const net = bankroll - 1000;
+  $netProfit.textContent = (net >= 0 ? '+$' : '-$') + Math.abs(net);
+  $netProfit.style.color = net >= 0 ? '#2ecc71' : '#e74c3c';
+}
+
+function setBet(amount) {
+  amount = Math.max(10, Math.min(bankroll, amount));
+  currentBet = amount;
+  $betInput.value = amount;
+  $currentBetDisplay.textContent = '$' + amount;
+}
+
+function updateSuggestedBet(units) {
+  if (units && units > 0) {
+    const suggested = Math.min(bankroll, units * 10);
+    $suggestedBet.textContent = 'Hi-Lo suggests: $' + suggested + ' (' + units + ' unit' + (units > 1 ? 's' : '') + ')';
+  } else {
+    $suggestedBet.textContent = '';
+  }
+}
+
+// Chip click handlers
+document.querySelectorAll('.bet-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    if (!gameOver) return;
+    const val = parseInt(chip.dataset.bet);
+    setBet(val);
+    document.querySelectorAll('.bet-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+  });
+});
+
+$betInput.addEventListener('change', () => {
+  if (!gameOver) return;
+  setBet(parseInt($betInput.value) || 10);
+  document.querySelectorAll('.bet-chip').forEach(c => {
+    c.classList.toggle('active', parseInt(c.dataset.bet) === currentBet);
+  });
+});
+
+// ── Card art path (togglable) ─────────────────────────────────────
+let cardArtPath = '/game/cards/';
+
+// ── Rendering ──────────────────────────────────────────────────────
+function renderCard(card, facedown = false) {
+  const el = document.createElement('div');
+  el.className = 'card' + (facedown ? ' facedown' : '');
+  if (!facedown) {
+    const name = card.rank + card.suitCode;
+    el.innerHTML = `<img src="${cardArtPath}${name}.png" alt="${name}" draggable="false">`;
+  }
+  return el;
+}
+
+function render(revealDealer = false) {
+  $dealerZone.innerHTML = '';
+  $playerZone.innerHTML = '';
+
+  dealer.forEach((c, i) => {
+    const hidden = (i === 1 && !revealDealer && !gameOver);
+    $dealerZone.appendChild(renderCard(c, hidden));
+  });
+
+  player.forEach(c => $playerZone.appendChild(renderCard(c)));
+
+  // Totals
+  if (revealDealer || gameOver) {
+    $dealerTotal.textContent = handTotal(dealer);
+  } else {
+    $dealerTotal.textContent = cardValue(dealer[0].rank);  // show upcard value only
+  }
+  $playerTotal.textContent = handTotal(player);
+}
+
+function showInfo(msg) {
+  $info.textContent = msg;
+  $info.classList.add('show');
+}
+function hideInfo() {
+  $info.classList.remove('show');
+}
+
+function updateStats() {
+  document.getElementById('wins').textContent = stats.wins;
+  document.getElementById('losses').textContent = stats.losses;
+  document.getElementById('pushes').textContent = stats.pushes;
+}
+
+function setButtons(dealing) {
+  $deal.disabled = !dealing;
+  $hit.disabled = dealing;
+  $stand.disabled = dealing;
+  $double.disabled = dealing || player.length !== 2;
+}
+
+// ── Game logic ─────────────────────────────────────────────────────
+function draw() {
+  if (shoe.length < 10) shoe = makeDeck(1);
+  return shoe.pop();
+}
+
+function deal() {
+  hideInfo();
+  // Lock in bet
+  setBet(parseInt($betInput.value) || 10);
+  doubled = false;
+  $betInput.disabled = true;
+  dealer = [draw(), draw()];
+  player = [draw(), draw()];
+  gameOver = false;
+  render();
+  setButtons(false);
+
+  // Check naturals
+  if (handTotal(player) === 21) {
+    stand(); // auto-resolve
+  }
+}
+
+function hit() {
+  if (gameOver) return;
+  player.push(draw());
+  render();
+  if (handTotal(player) > 21) {
+    bankroll -= currentBet;
+    endRound('BUST \u2014 -$' + currentBet);
+    stats.losses++;
+    updateStats();
+    updateBankrollDisplay();
+  } else if (handTotal(player) === 21) {
+    stand();
+  }
+  // Disable double after first hit
+  $double.disabled = true;
+}
+
+function doDouble() {
+  if (gameOver || player.length !== 2) return;
+  doubled = true;
+  $currentBetDisplay.textContent = '$' + (currentBet * 2);
+  player.push(draw());
+  render();
+  if (handTotal(player) > 21) {
+    bankroll -= currentBet * 2;
+    endRound('BUST \u2014 -$' + (currentBet * 2));
+    stats.losses++;
+    updateStats();
+    updateBankrollDisplay();
+  } else {
+    stand();
+  }
+}
+
+function stand() {
+  if (gameOver) return;
+  // Dealer draws to 17+
+  render(true);
+  dealerPlay();
+}
+
+function dealerPlay() {
+  gameOver = true;
+  const step = () => {
+    render(true);
+    if (handTotal(dealer) < 17) {
+      dealer.push(draw());
+      setTimeout(step, 400 * BOT_SPEED);
+    } else {
+      resolve();
+    }
+  };
+  step();
+}
+
+function resolve() {
+  const pt = handTotal(player);
+  const dt = handTotal(dealer);
+  const mult = doubled ? 2 : 1;
+  const isBlackjack = (player.length === 2 && pt === 21);
+  render(true);
+
+  if (dt > 21) {
+    const payout = isBlackjack ? Math.floor(currentBet * 1.5) : currentBet * mult;
+    showInfo('Dealer busts \u2014 You win +$' + payout + '!');
+    bankroll += payout;
+    stats.wins++;
+  } else if (pt > dt) {
+    const payout = isBlackjack ? Math.floor(currentBet * 1.5) : currentBet * mult;
+    showInfo('You win +$' + payout + '!');
+    bankroll += payout;
+    stats.wins++;
+  } else if (dt > pt) {
+    const loss = currentBet * mult;
+    showInfo('Dealer wins \u2014 -$' + loss);
+    bankroll -= loss;
+    stats.losses++;
+  } else {
+    showInfo('Push \u2014 $' + (currentBet * mult) + ' returned');
+    stats.pushes++;
+  }
+  updateStats();
+  updateBankrollDisplay();
+  setButtons(true);
+  $betInput.disabled = false;
+}
+
+function endRound(msg) {
+  gameOver = true;
+  render(true);
+  showInfo(msg);
+  setButtons(true);
+  $betInput.disabled = false;
+}
+
+function clearTable() {
+  dealer = [];
+  player = [];
+  $dealerZone.innerHTML = '';
+  $playerZone.innerHTML = '';
+  $dealerTotal.textContent = '';
+  $playerTotal.textContent = '';
+  hideInfo();
+}
+
+// ── Event listeners ────────────────────────────────────────────────
+$deal.addEventListener('click', deal);
+$hit.addEventListener('click', hit);
+$stand.addEventListener('click', stand);
+$double.addEventListener('click', doDouble);
+
+// Keyboard shortcuts (useful for manual testing)
+document.addEventListener('keydown', e => {
+  if (e.key === 'd' && !$deal.disabled) deal();
+  if (e.key === 'h' && !$hit.disabled) hit();
+  if (e.key === 's' && !$stand.disabled) stand();
+  if (e.key === 'x' && !$double.disabled) doDouble();
+});
+
+// Init
+setButtons(true);
+
+// ── Speed controls ─────────────────────────────────────────────────
+// BOT_SPEED is a sleep *multiplier* (higher = slower).
+// We display an intuitive "speed" where higher = faster.
+// displaySpeed = 1 / BOT_SPEED  (e.g., BOT_SPEED=0.5 → display "2.0x")
+const SPEED_STEPS = [0.125, 0.25, 0.5, 1, 2, 4];  // BOT_SPEED values: 0.125=8x fast, 4=0.25x slow
+let speedIndex = SPEED_STEPS.indexOf(1);  // default to 1 (1.0x display)
+// Set initial BOT_SPEED from URL param — find closest step
+if (BOT_SPEED !== 1) {
+  let closest = 0;
+  for (let i = 0; i < SPEED_STEPS.length; i++) {
+    if (Math.abs(SPEED_STEPS[i] - BOT_SPEED) < Math.abs(SPEED_STEPS[closest] - BOT_SPEED)) closest = i;
+  }
+  speedIndex = closest;
+  BOT_SPEED = SPEED_STEPS[speedIndex];
+}
+
+const $speedDisplay = document.getElementById('speed-display');
+function updateSpeedDisplay() {
+  const displaySpeed = 1 / BOT_SPEED;
+  $speedDisplay.textContent = displaySpeed.toFixed(1) + 'x';
+}
+updateSpeedDisplay();
+
+document.getElementById('btn-slow').addEventListener('click', () => {
+  if (speedIndex < SPEED_STEPS.length - 1) {
+    speedIndex++;
+    BOT_SPEED = SPEED_STEPS[speedIndex];
+    updateSpeedDisplay();
+  }
+});
+document.getElementById('btn-fast').addEventListener('click', () => {
+  if (speedIndex > 0) {
+    speedIndex--;
+    BOT_SPEED = SPEED_STEPS[speedIndex];
+    updateSpeedDisplay();
+  }
+});
+
+// ── Art toggle ────────────────────────────────────────────────────
+const $artSwitch = document.getElementById('art-switch');
+const $artLabel = document.getElementById('art-label');
+let usingOldArt = false;
+
+$artSwitch.addEventListener('click', () => {
+  usingOldArt = !usingOldArt;
+  cardArtPath = usingOldArt ? '/game/cards_old/' : '/game/cards/';
+  $artSwitch.classList.toggle('old', usingOldArt);
+  $artLabel.textContent = usingOldArt ? 'Old Art' : 'Training Set';
+  $artLabel.className = 'toggle-art-label ' + (usingOldArt ? 'old' : 'current');
+
+  // Re-render visible cards with new art
+  if (dealer.length || player.length) {
+    render(gameOver);
+  }
+
+  // Trigger YOLO re-detection if bot is active
+  if (window._triggerRedetect) window._triggerRedetect();
+});
+</script>
+
+<!-- ── Bot Script ────────────────────────────────────────────────── -->
+<script>
+(function () {
+  // ── DOM refs ──────────────────────────────────────────────────
+  const overlayCanvas = document.getElementById('overlay');
+  const olCtx = overlayCanvas.getContext('2d');
+  const modelCanvas = document.getElementById('model-view');
+  const mvCtx = modelCanvas.getContext('2d');
+  const modelWrap = document.getElementById('model-view-wrap');
+  const $readout = document.getElementById('detection-readout');
+  const $detList = document.getElementById('detection-list');
+  const $startBot = document.getElementById('btn-start-bot');
+  const $stopBot = document.getElementById('btn-stop-bot');
+  const $resetCount = document.getElementById('btn-reset-count');
+  const $hudAction = document.getElementById('hud-action');
+  const $hudStrategy = document.getElementById('hud-strategy');
+  const $hudYolo = document.getElementById('hud-yolo');
+  const $hudSource = document.getElementById('hud-source');
+  const $hudDealer = document.getElementById('hud-dealer');
+  const $hudPlayer = document.getElementById('hud-player');
+  const $hudRunning = document.getElementById('hud-running');
+  const $hudTrue = document.getElementById('hud-true');
+  const $hudSeen = document.getElementById('hud-seen');
+
+  let botRunning = false;
+  let botPaused = false;
+  let botTimer = null;
+  let handInProgress = false;
+  let modelActionCount = 0;
+  let fallbackActionCount = 0;
+  let botActive = false;
+  let handStats = { scans: 0, detections: 0, correct: 0, wrong: 0 };
+  let lastSuggestedBetUnits = 1;
+  let demoHandCount = 0;
+
+  // ═════════════════════════════════════════════════════════════
+  // DEMO MODE CONFIGURATION
+  // Controls autoplay behavior for presentations.
+  // The bot auto-plays at demoSpeed with NO hand summary modal.
+  // When a stop condition first fires, the bot pauses and a
+  // notification bar appears at the top.  Press Space / Resume
+  // to continue.
+  //
+  // Phase 2: when bankroll >= bankrollThreshold, old card art
+  // is activated and the bot keeps going until a King or Jack
+  // is missed.
+  //
+  // Each stop's test() returns a details string if the condition
+  // is met, or null otherwise.  Modify / reorder / add entries
+  // as needed.
+  //
+  // URL param:  ?demo=false  to disable demo mode entirely
+  // ═════════════════════════════════════════════════════════════
+  const DEMO = {
+    enabled: _params.get('demo') !== 'false',
+    speed: 0.125,           // BOT_SPEED during autoplay (0.125 = 8x display)
+    introHands: 2,          // first N hands play at introSpeed with modal
+    introSpeed: [2, 1],     // BOT_SPEED per intro hand (2=0.5x, 1=1x); last value repeats
+    originalSpeed: null,    // saved when bot starts, restored when demo ends
+    bankrollThreshold: 1500, // bankroll >= this triggers Phase 2 (old art)
+
+    // ── Phase 1 stops (first instance of each) ───────────────
+    stops: [
+      {
+        id: 'bottomCorrect',
+        label: 'Bottom-of-card rank identified correctly',
+        triggered: false,
+        test(ctx) {
+          const d = ctx.bottomDetections.find(det => ctx.actualAll.includes(det.class_name));
+          return d ? 'Detected ' + d.class_name + ' from bottom corner' : null;
+        },
+      },
+      {
+        id: 'bottomIncorrect',
+        label: 'Bottom-of-card rank identified incorrectly',
+        triggered: false,
+        test(ctx) {
+          const d = ctx.bottomDetections.find(det => !ctx.actualAll.includes(det.class_name));
+          return d ? 'Detected ' + d.class_name + ' (not on table) from bottom corner' : null;
+        },
+      },
+      {
+        id: 'suitConfusion',
+        label: 'Diamond \u2194 Heart suit confusion',
+        triggered: false,
+        test(ctx) {
+          for (const fp of ctx.falsePositives) {
+            for (const miss of ctx.missed) {
+              const fpR = fp.slice(0, -1), fpS = fp.slice(-1);
+              const mR = miss.slice(0, -1), mS = miss.slice(-1);
+              if (fpR === mR && ((fpS === 'd' && mS === 'h') || (fpS === 'h' && mS === 'd')))
+                return 'Actual ' + miss + ' \u2192 detected as ' + fp;
+            }
+          }
+          return null;
+        },
+      },
+      {
+        id: 'rankConfusion',
+        label: 'Rank confusion (wrong rank detected)',
+        triggered: false,
+        test(ctx) {
+          for (const fp of ctx.falsePositives) {
+            for (const miss of ctx.missed) {
+              if (fp.slice(-1) === miss.slice(-1) && fp.slice(0, -1) !== miss.slice(0, -1))
+                return 'Actual ' + miss + ' \u2192 detected as ' + fp;
+            }
+          }
+          return null;
+        },
+      },
+    ],
+
+    // ── Phase 2: old art until missed King or Jack ───────────
+    phase2: {
+      active: false,
+      triggered: false,
+      label: 'Missed King or Jack (old art)',
+      test(ctx) {
+        const m = ctx.missed.find(c => { const r = c.slice(0, -1); return r === 'K' || r === 'J'; });
+        return m ? 'Missed ' + m : null;
+      },
+    },
+
+    // ── Spatial thresholds ───────────────────────────────────
+    // bbox center Y above these values = "bottom of card" detection
+    // (cards have rank index at top-left AND bottom-right inverted)
+    bottomThresholdY: { dealer: 125, player: 425 },
+  };
+
+  if (DEMO.enabled) console.log('[demo] Demo mode active \u2014 4 stop conditions + old art phase');
+
+  function resetHandStats() {
+    handStats = { scans: 0, detections: 0, correct: 0, wrong: 0 };
+  }
+
+  function tallyDetection(detData) {
+    if (!detData || !detData.detections) return;
+    handStats.scans++;
+
+    const detCards = [
+      ...(detData.dealer_cards || []),
+      ...(detData.player_cards || [])
+    ];
+    handStats.detections += detCards.length;
+
+    // Compare to visible actual cards (upcard only during play)
+    const visibleDealer = gameOver
+      ? dealer.map(c => c.rank + c.suitCode)
+      : (dealer.length ? [dealer[0].rank + dealer[0].suitCode] : []);
+    const visiblePlayer = player.map(c => c.rank + c.suitCode);
+    const actualVisible = [...visibleDealer, ...visiblePlayer];
+
+    const pool = [...detCards];
+    let correct = 0;
+    for (const card of actualVisible) {
+      const idx = pool.indexOf(card);
+      if (idx !== -1) {
+        correct++;
+        pool.splice(idx, 1);
+      }
+    }
+    handStats.correct += correct;
+    handStats.wrong += pool.length;
+  }
+
+  const SUIT_SYMBOLS = { s: '\u2660', h: '\u2665', d: '\u2666', c: '\u2663' };
+  const SUIT_COLORS  = { s: '#ddd', h: '#e74c3c', d: '#e74c3c', c: '#ddd' };
+
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  // ── Status helpers ────────────────────────────────────────────
+  function setYoloStatus(status, text) {
+    $hudYolo.className = 'hud-status ' + status;
+    $hudYolo.textContent = text || status.toUpperCase();
+  }
+
+  function setStrategyStatus(status, text) {
+    $hudStrategy.className = 'hud-status ' + status;
+    $hudStrategy.textContent = text || status.toUpperCase();
+  }
+
+  function setSourceStatus(source) {
+    if (source === 'model') {
+      $hudSource.className = 'hud-status model';
+      $hudSource.textContent = 'MODEL';
+    } else if (source === 'blind') {
+      $hudSource.className = 'hud-status error';
+      $hudSource.textContent = 'BLIND';
+    } else {
+      $hudSource.className = 'hud-status fallback';
+      $hudSource.textContent = 'FALLBACK';
+    }
+  }
+
+  // ── Get card names from JS game state ─────────────────────────
+  function getPlayerCardNames() {
+    return player.map(c => c.rank + c.suitCode);
+  }
+  function getDealerUpcard() {
+    return dealer.length ? dealer[0].rank + dealer[0].suitCode : null;
+  }
+
+  // ── Execute the recommended action ────────────────────────────
+  function executeAction(action) {
+    const btnMap = {
+      hit: document.getElementById('btn-hit'),
+      stand: document.getElementById('btn-stand'),
+      double: document.getElementById('btn-double'),
+    };
+    const btn = btnMap[action];
+    if (btn && !btn.disabled) {
+      btn.click();
+      return true;
+    }
+    // Fall back: split → hit
+    if (action === 'split') {
+      const hitBtn = document.getElementById('btn-hit');
+      if (!hitBtn.disabled) { hitBtn.click(); return true; }
+    }
+    return false;
+  }
+
+  // ── Update HUD ────────────────────────────────────────────────
+  function updateHUD(data) {
+    $hudAction.textContent = data.action.toUpperCase();
+    $hudAction.style.color =
+      data.action === 'hit' ? '#2ecc71' :
+      data.action === 'stand' ? '#e74c3c' :
+      data.action === 'double' ? '#8e44ad' : '#fff';
+    $hudDealer.textContent = data.dealer_total || '\u2014';
+    $hudPlayer.textContent = data.player_total || '\u2014';
+    $hudRunning.textContent = data.running_count;
+    $hudTrue.textContent = data.true_count;
+    $hudSeen.textContent = data.cards_seen;
+    if (data.suggested_bet_units !== undefined) {
+      lastSuggestedBetUnits = data.suggested_bet_units;
+      updateSuggestedBet(data.suggested_bet_units);
+      document.getElementById('hud-bet-units').textContent = data.suggested_bet_units;
+    }
+  }
+
+  // ── Capture table → base64 PNG ────────────────────────────────
+  async function captureTable() {
+    const table = document.getElementById('table');
+    const canvas = await html2canvas(table, {
+      ignoreElements: el => el.id === 'overlay' || el.id === 'info',
+      backgroundColor: null,
+      useCORS: true,
+      scale: 1,
+      width: 820,
+      height: 520,
+    });
+    return canvas.toDataURL('image/png');
+  }
+
+  // ── YOLO detection (backend) ──────────────────────────────────
+  async function detectCards(imageData) {
+    const resp = await fetch('/api/detect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: imageData }),
+    });
+    return resp.json();
+  }
+
+  // ── Draw bounding boxes on main overlay ───────────────────────
+  function drawOverlay(detections) {
+    olCtx.clearRect(0, 0, 820, 520);
+    for (const det of detections) {
+      const [x1, y1, x2, y2] = det.bbox;
+      const color = det.zone === 'dealer' ? '#f39c12' : '#2ecc71';
+
+      olCtx.shadowColor = color;
+      olCtx.shadowBlur = 8;
+      olCtx.strokeStyle = color;
+      olCtx.lineWidth = 3;
+      olCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+      olCtx.shadowBlur = 0;
+
+      let label = `${det.class_name} ${(det.confidence * 100).toFixed(0)}%`;
+      if (det.pass_num && det.pass_num > 1) label += ` P${det.pass_num}`;
+      olCtx.font = 'bold 13px monospace';
+      const tw = olCtx.measureText(label).width;
+      olCtx.fillStyle = color;
+      olCtx.fillRect(x1, y1 - 19, tw + 8, 19);
+      olCtx.fillStyle = '#000';
+      olCtx.fillText(label, x1 + 4, y1 - 5);
+    }
+  }
+
+  // ── Draw model-view canvas (full size, 1:1) ───────────────────
+  function drawModelView(imageDataUrl, detections) {
+    const img = new Image();
+    img.onload = () => {
+      mvCtx.clearRect(0, 0, 820, 520);
+      mvCtx.drawImage(img, 0, 0, 820, 520);
+
+      for (const det of detections) {
+        const [x1, y1, x2, y2] = det.bbox;
+        const color = det.zone === 'dealer' ? '#f39c12' : '#2ecc71';
+
+        mvCtx.shadowColor = color;
+        mvCtx.shadowBlur = 6;
+        mvCtx.strokeStyle = color;
+        mvCtx.lineWidth = 2;
+        mvCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+        mvCtx.shadowBlur = 0;
+
+        let label = `${det.class_name} ${(det.confidence * 100).toFixed(0)}%`;
+        if (det.pass_num && det.pass_num > 1) label += ` P${det.pass_num}`;
+        mvCtx.font = 'bold 12px monospace';
+        const tw = mvCtx.measureText(label).width;
+        mvCtx.fillStyle = color;
+        mvCtx.fillRect(x1, y1 - 16, tw + 6, 16);
+        mvCtx.fillStyle = '#000';
+        mvCtx.fillText(label, x1 + 3, y1 - 4);
+      }
+
+      modelWrap.classList.add('flash');
+      setTimeout(() => modelWrap.classList.remove('flash'), 400);
+    };
+    img.src = imageDataUrl;
+  }
+
+  // ── Update detection readout text ─────────────────────────────
+  function updateReadout(detections, totalPasses) {
+    if (!detections.length) {
+      $readout.textContent = 'No cards detected by model';
+      return;
+    }
+    const passInfo = totalPasses > 1 ? ` (${totalPasses} passes)` : '';
+    $readout.textContent = `Detected ${detections.length} cards${passInfo}`;
+  }
+
+  // ── Update structured detection list ──────────────────────────
+  function updateDetectionList(detections) {
+    $detList.innerHTML = '';
+    if (!detections.length) return;
+
+    const sorted = [...detections].sort((a, b) => {
+      const zoneOrder = { dealer: 0, player: 1, unknown: 2 };
+      const za = zoneOrder[a.zone] || 2;
+      const zb = zoneOrder[b.zone] || 2;
+      if (za !== zb) return za - zb;
+      return b.confidence - a.confidence;
+    });
+
+    for (const det of sorted) {
+      const card = document.createElement('div');
+      card.className = 'det-card ' + (det.zone === 'dealer' ? 'dealer' : det.zone === 'player' ? 'player' : '');
+      let html = `<span class="det-name">${det.class_name}</span> `;
+      html += `<span class="det-conf">${(det.confidence * 100).toFixed(0)}%</span><br>`;
+      html += `<span class="det-zone">${det.zone}</span>`;
+      if (det.pass_num && det.pass_num > 1) {
+        html += ` <span class="det-pass">P${det.pass_num}</span>`;
+      }
+      card.innerHTML = html;
+      $detList.appendChild(card);
+    }
+  }
+
+  // ── Expose re-detection trigger for art toggle ──────────────
+  window._triggerRedetect = function() {
+    if (dealer.length || player.length) {
+      doDetection();
+    }
+  };
+
+  // ── Run YOLO detection (awaitable, returns data) ──────────────
+  async function doDetection() {
+    try {
+      setYoloStatus('scanning', 'SCANNING...');
+      $readout.textContent = 'Scanning...';
+      const imageData = await captureTable();
+      const data = await detectCards(imageData);
+      const n = data.detections.length;
+      setYoloStatus('done', n + ' card' + (n !== 1 ? 's' : ''));
+      drawOverlay(data.detections);
+      drawModelView(imageData, data.detections);
+      updateReadout(data.detections, data.total_passes || 1);
+      updateDetectionList(data.detections);
+      return data;
+    } catch (e) {
+      console.error('[yolo]', e);
+      setYoloStatus('error', 'ERROR');
+      $readout.textContent = 'Detection error';
+      return null;
+    }
+  }
+
+  // ── Card display helpers for summary ──────────────────────────
+  function formatCard(cardName) {
+    const suit = cardName.slice(-1);
+    const rank = cardName.slice(0, -1);
+    const sym = SUIT_SYMBOLS[suit] || suit;
+    const col = SUIT_COLORS[suit] || '#fff';
+    return '<span style="color:' + col + '">' + rank + sym + '</span>';
+  }
+
+  function compareCards(actual, detected) {
+    const pool = [...detected];
+    const results = [];
+    let correct = 0;
+    for (const card of actual) {
+      const idx = pool.indexOf(card);
+      if (idx !== -1) {
+        results.push({ card: card, detected: true });
+        pool.splice(idx, 1);
+        correct++;
+      } else {
+        results.push({ card: card, detected: false });
+      }
+    }
+    return { results: results, correct: correct, falsePositives: pool };
+  }
+
+  // ── Demo: build analysis context from hand results ────────────
+  function buildDemoContext(finalData) {
+    const actualAll = [
+      ...dealer.map(c => c.rank + c.suitCode),
+      ...player.map(c => c.rank + c.suitCode),
+    ];
+    const detAll = [
+      ...(finalData.dealer_cards || []),
+      ...(finalData.player_cards || []),
+    ];
+    const detections = finalData.detections || [];
+
+    // Bottom-of-card detections (bbox center Y in lower half of card)
+    const bottomDetections = detections.filter(det => {
+      const cy = (det.bbox[1] + det.bbox[3]) / 2;
+      if (det.zone === 'dealer') return cy > DEMO.bottomThresholdY.dealer;
+      if (det.zone === 'player') return cy > DEMO.bottomThresholdY.player;
+      return false;
+    });
+
+    // Compare actual vs detected
+    const comp = compareCards(actualAll, detAll);
+    const missed = comp.results.filter(r => !r.detected).map(r => r.card);
+    return { actualAll, detAll, detections, bottomDetections, missed, falsePositives: comp.falsePositives };
+  }
+
+  function checkDemoStop(finalData) {
+    if (!DEMO.enabled) return null;
+    const ctx = buildDemoContext(finalData);
+
+    // Phase 2: looking for missed K/J with old art
+    if (DEMO.phase2.active && !DEMO.phase2.triggered) {
+      const details = DEMO.phase2.test(ctx);
+      if (details) {
+        DEMO.phase2.triggered = true;
+        console.log('[demo] Phase 2 stop: ' + details);
+        return { reason: DEMO.phase2.label, details, phase: 2 };
+      }
+    }
+
+    // Phase 1: first untriggered matching stop
+    for (const stop of DEMO.stops) {
+      if (!stop.triggered) {
+        const details = stop.test(ctx);
+        if (details) {
+          stop.triggered = true;
+          console.log('[demo] Phase 1 stop (' + stop.id + '): ' + details);
+          return { reason: stop.label, details, phase: 1 };
+        }
+      }
+    }
+    return null;
+  }
+
+  // Log performance to server without showing the summary modal
+  function logPerformanceSilent(finalData) {
+    const actualDealer = dealer.map(c => c.rank + c.suitCode);
+    const actualPlayer = player.map(c => c.rank + c.suitCode);
+    fetch('/api/log_performance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        actual_dealer: actualDealer,
+        actual_player: actualPlayer,
+        detected_dealer: finalData ? (finalData.dealer_cards || []) : [],
+        detected_player: finalData ? (finalData.player_cards || []) : [],
+      }),
+    }).catch(err => console.warn('[perf] log_performance failed:', err));
+  }
+
+  // ── Demo notification bar helpers ─────────────────────────────
+  function showDemoNotify(reason, details) {
+    const el = document.getElementById('demo-notify');
+    let html = '\u25CF ' + reason;
+    if (details) html += '<div class="notify-detail">' + details + '</div>';
+    html += '<div class="notify-hint">Press Space or click Resume to continue</div>';
+    el.innerHTML = html;
+    el.classList.add('visible');
+  }
+  function hideDemoNotify() {
+    const el = document.getElementById('demo-notify');
+    el.classList.remove('visible');
+  }
+
+  // ── Hand summary modal ────────────────────────────────────────
+  function showHandSummary(finalData, demoStop) {
+    const actualDealer = dealer.map(c => c.rank + c.suitCode);
+    const actualPlayer = player.map(c => c.rank + c.suitCode);
+    const detDealer = finalData ? (finalData.dealer_cards || []) : [];
+    const detPlayer = finalData ? (finalData.player_cards || []) : [];
+
+    const dealerComp = compareCards(actualDealer, detDealer);
+    const playerComp = compareCards(actualPlayer, detPlayer);
+
+    const totalActual = actualDealer.length + actualPlayer.length;
+    const totalCorrect = dealerComp.correct + playerComp.correct;
+    const accuracy = totalActual > 0 ? Math.round(totalCorrect / totalActual * 100) : 0;
+
+    const pt = handTotal(player);
+    const dt = handTotal(dealer);
+    let resultText, resultClass;
+    if (pt > 21)      { resultText = 'PLAYER BUSTS'; resultClass = 'loss'; }
+    else if (dt > 21) { resultText = 'DEALER BUSTS \u2014 PLAYER WINS'; resultClass = 'win'; }
+    else if (pt > dt) { resultText = 'PLAYER WINS'; resultClass = 'win'; }
+    else if (dt > pt) { resultText = 'DEALER WINS'; resultClass = 'loss'; }
+    else              { resultText = 'PUSH'; resultClass = 'push'; }
+
+    function renderComparison(comp) {
+      return comp.results.map(function(r) {
+        const cls = r.detected ? 'detected' : 'missed';
+        const icon = r.detected
+          ? '<span class="check">\u2713</span>'
+          : '<span class="miss">\u2717</span>';
+        return '<div class="summary-card-tile ' + cls + '">' + formatCard(r.card) + ' ' + icon + '</div>';
+      }).join('');
+    }
+
+    function renderFalsePositives(fps) {
+      return fps.map(function(c) {
+        return '<div class="summary-card-tile false-pos">' + formatCard(c) + ' <span class="miss">FP</span></div>';
+      }).join('');
+    }
+
+    const allFP = dealerComp.falsePositives.concat(playerComp.falsePositives);
+
+    // Log per-card-type performance to server
+    fetch('/api/log_performance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        actual_dealer: actualDealer,
+        actual_player: actualPlayer,
+        detected_dealer: detDealer,
+        detected_player: detPlayer
+      })
+    }).catch(function(err) { console.warn('[perf] log_performance failed:', err); });
+
+    const mult = doubled ? 2 : 1;
+    const betAmount = currentBet * mult;
+    const isBlackjack = (player.length === 2 && pt === 21);
+    let payout = 0;
+    if (resultClass === 'win') payout = isBlackjack ? Math.floor(currentBet * 1.5) : betAmount;
+    else if (resultClass === 'loss') payout = -betAmount;
+
+    let html = '<h2>HAND SUMMARY</h2>';
+    if (demoStop) {
+      html += '<div style="background:#e67e22;color:#fff;padding:8px 16px;border-radius:6px;margin-bottom:12px;font-size:14px;font-weight:bold;letter-spacing:1px">';
+      html += '\u25CF DEMO STOP: ' + demoStop.reason;
+      if (demoStop.details) html += '<br><span style="font-weight:normal;font-size:13px">' + demoStop.details + '</span>';
+      html += '</div>';
+    }
+    html += '<div class="summary-result ' + resultClass + '">' + resultText + '</div>';
+    html += '<div class="summary-totals">Player: ' + pt + ' | Dealer: ' + dt + '</div>';
+    html += '<div class="summary-totals" style="opacity:1">';
+    html += 'Bet: <strong>$' + betAmount + '</strong>';
+    if (doubled) html += ' (doubled)';
+    html += ' | Result: <strong style="color:' + (payout >= 0 ? '#2ecc71' : '#e74c3c') + '">' + (payout >= 0 ? '+$' + payout : '-$' + Math.abs(payout)) + '</strong>';
+    html += ' | Bankroll: <strong>$' + bankroll + '</strong>';
+    html += '</div>';
+
+    html += '<div class="summary-section"><h3>DEALER CARDS</h3>';
+    html += '<div class="summary-cards">' + renderComparison(dealerComp) + '</div></div>';
+
+    html += '<div class="summary-section"><h3>PLAYER CARDS</h3>';
+    html += '<div class="summary-cards">' + renderComparison(playerComp) + '</div></div>';
+
+    if (allFP.length > 0) {
+      html += '<div class="summary-section"><h3>FALSE POSITIVES</h3>';
+      html += '<div class="summary-cards">' + renderFalsePositives(allFP) + '</div></div>';
+    }
+
+    html += '<div class="summary-stats">';
+    html += '<div>Final Snapshot: <strong>' + totalCorrect + '/' + totalActual + ' (' + accuracy + '%)</strong></div>';
+    html += '<div>Decisions: <strong>' + modelActionCount + ' model</strong>, <strong>' + fallbackActionCount + ' blind</strong></div>';
+    html += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1)">All Scans This Hand: <strong>' + handStats.scans + '</strong></div>';
+    html += '<div>Total Detections: <strong>' + handStats.detections + '</strong> &mdash; '
+          + '<span style="color:#2ecc71">' + handStats.correct + ' correct</span>, '
+          + '<span style="color:#e74c3c">' + handStats.wrong + ' wrong</span></div>';
+    html += '</div>';
+
+    html += '<button id="btn-summary-continue">CONTINUE</button>';
+
+    document.getElementById('summary-modal').innerHTML = html;
+    document.getElementById('summary-modal-overlay').style.display = 'flex';
+
+    document.getElementById('btn-summary-continue').addEventListener('click', function() {
+      document.getElementById('summary-modal-overlay').style.display = 'none';
+      clearTable();
+      olCtx.clearRect(0, 0, 820, 520);
+      if (botRunning) botCycle();
+    });
+  }
+
+  // ── Main bot cycle (fully synchronized, no setTimeout) ──────
+  async function botCycle() {
+    if (botActive) return;
+    botActive = true;
+    try {
+      while (botRunning && !botPaused) {
+        // ── Game over ───────────────────────────────────────────
+        if (gameOver) {
+          // Wait for dealer animation to finish
+          if (document.getElementById('btn-deal').disabled) {
+            await sleep(200);
+            continue;
+          }
+
+          // Hand just finished → final detection + summary / demo autoplay
+          if (handInProgress) {
+            handInProgress = false;
+            await sleep(500 * BOT_SPEED);
+            const finalData = await doDetection();
+            tallyDetection(finalData);
+
+            // Non-demo, or intro hands (skip hand 1): show the hand summary modal
+            if (!DEMO.enabled || (demoHandCount > 1 && demoHandCount <= DEMO.introHands)) {
+              showHandSummary(finalData);
+              return; // modal pauses bot; CONTINUE resumes
+            }
+
+            // ── Demo autoplay: no modal, check conditions ──────
+            logPerformanceSilent(finalData);
+
+            // Bankroll threshold + all Phase 1 stops → activate Phase 2 (old art) and pause
+            if (!DEMO.phase2.active && bankroll >= DEMO.bankrollThreshold && DEMO.stops.every(s => s.triggered)) {
+              DEMO.phase2.active = true;
+              if (!usingOldArt) document.getElementById('art-switch').click();
+              console.log('[demo] Phase 2 — bankroll $' + bankroll + ' >= $' + DEMO.bankrollThreshold + ', switching to old art');
+              showDemoNotify('Bankroll $' + bankroll + ' — switching to old card art', 'Now looking for missed King or Jack');
+              botPaused = true;
+              syncBotUI();
+              return; // paused — resume to continue into Phase 2
+            }
+
+            // Check stop conditions → pause + notification
+            const demoStop = checkDemoStop(finalData);
+            if (demoStop) {
+              showDemoNotify(demoStop.reason, demoStop.details);
+              botPaused = true;
+              syncBotUI();
+              // Phase 2 complete → mark demo as done (speed restores on resume)
+              if (demoStop.phase === 2) {
+                DEMO.enabled = false;
+                console.log('[demo] Demo complete');
+              }
+              return; // paused — cards stay on table for inspection
+            }
+
+            // No stop → clear and continue to next hand
+            clearTable();
+            olCtx.clearRect(0, 0, 820, 520);
+            continue;
+          }
+
+          // Start new hand
+          handInProgress = true;
+          demoHandCount++;
+          modelActionCount = 0;
+          fallbackActionCount = 0;
+          resetHandStats();
+          olCtx.clearRect(0, 0, 820, 520);
+
+          // Set speed for this hand: per-hand intro speed, then full demo speed
+          if (DEMO.enabled) {
+            const _iSpeeds = Array.isArray(DEMO.introSpeed) ? DEMO.introSpeed : [DEMO.introSpeed];
+            if (demoHandCount <= DEMO.introHands) {
+              const idx = Math.min(demoHandCount - 1, _iSpeeds.length - 1);
+              BOT_SPEED = _iSpeeds[idx];
+            } else if (demoHandCount === DEMO.introHands + 1) {
+              BOT_SPEED = DEMO.speed;
+              console.log('[demo] Intro done — switching to ' + (1 / DEMO.speed) + 'x speed');
+            }
+            speedIndex = SPEED_STEPS.indexOf(BOT_SPEED);
+            if (speedIndex === -1) speedIndex = 0;
+            updateSpeedDisplay();
+          }
+          await fetch('/api/new_hand', { method: 'POST' });
+
+          // Auto-set bet based on last Hi-Lo suggestion
+          const suggestedAmount = Math.min(bankroll, Math.max(10, lastSuggestedBetUnits * 10));
+          setBet(suggestedAmount);
+
+          $hudAction.textContent = 'DEALING...';
+          $hudAction.style.color = '#f1c40f';
+          $hudSource.className = 'hud-status idle';
+          $hudSource.textContent = '\u2014';
+          document.getElementById('btn-deal').click();
+          await sleep(1200 * BOT_SPEED);
+          if (!botRunning || botPaused) return;
+          const initData = await doDetection();
+          tallyDetection(initData);
+          await sleep(500 * BOT_SPEED);
+          continue;
+        }
+
+        // ── Game in progress → detect, decide, act ──────────────
+        // Bot only uses YOLO detections — no fallback to game state
+        let detData = null;
+        let action = null;
+
+        for (let retry = 0; retry < 3; retry++) {
+          detData = await doDetection();
+          tallyDetection(detData);
+
+          if (detData && detData.action && detData.action !== 'none' &&
+              detData.player_cards && detData.player_cards.length > 0 &&
+              detData.dealer_cards && detData.dealer_cards.length > 0) {
+            action = detData.action;
+            updateHUD(detData);
+            break;
+          }
+
+          // Retry after brief pause
+          if (retry < 2) await sleep(400 * BOT_SPEED);
+        }
+
+        if (action) {
+          modelActionCount++;
+          setSourceStatus('model');
+        } else {
+          // Model couldn't identify cards — stand as safe default
+          action = 'stand';
+          fallbackActionCount++;
+          setSourceStatus('blind');
+          $hudAction.textContent = 'STAND (BLIND)';
+          $hudAction.style.color = '#e74c3c';
+        }
+
+        if (!action) {
+          await sleep(500 * BOT_SPEED);
+          continue;
+        }
+
+        // Brief pause so user can read recommendation
+        await sleep(800 * BOT_SPEED);
+        if (!botRunning || gameOver || botPaused) continue;
+
+        // Execute action
+        executeAction(action);
+
+        // Wait for game state to settle
+        if (action === 'stand' || action === 'double') {
+          await waitForGameOver();
+        } else {
+          await sleep(600 * BOT_SPEED);
+        }
+      }
+    } catch (err) {
+      console.error('[bot]', err);
+    } finally {
+      botActive = false;
+    }
+  }
+
+  async function waitForGameOver() {
+    const start = Date.now();
+    while (!gameOver && Date.now() - start < 20000) {
+      await sleep(200);
+    }
+    await sleep(300 * BOT_SPEED);
+  }
+
+  // ── UI sync helpers ──────────────────────────────────────────
+  function syncBotUI() {
+    if (!botRunning) {
+      $startBot.textContent = 'START BOT';
+      $startBot.className = '';
+      $stopBot.style.display = 'none';
+    } else if (botPaused) {
+      $startBot.textContent = '\u25B6 RESUME';
+      $startBot.className = 'paused';
+      $stopBot.style.display = '';
+    } else {
+      $startBot.textContent = '\u275A\u275A PAUSE';
+      $startBot.className = 'running';
+      $stopBot.style.display = '';
+    }
+  }
+
+  function stopBot() {
+    botRunning = false;
+    botPaused = false;
+    handInProgress = false;
+    clearTimeout(botTimer);
+    hideDemoNotify();
+    olCtx.clearRect(0, 0, 820, 520);
+    $hudAction.textContent = '\u2014';
+    $hudAction.style.color = '#fff';
+    setYoloStatus('idle', 'IDLE');
+    setStrategyStatus('idle', 'IDLE');
+    $hudSource.className = 'hud-status idle';
+    $hudSource.textContent = '\u2014';
+    document.getElementById('summary-modal-overlay').style.display = 'none';
+    syncBotUI();
+  }
+
+  // ── Button handlers ───────────────────────────────────────────
+  $startBot.addEventListener('click', function() {
+    if (!botRunning) {
+      // START
+      botRunning = true;
+      botPaused = false;
+      handInProgress = false;
+      // Demo mode: save speed, start at intro speed (1x for first N hands)
+      if (DEMO.enabled) {
+        DEMO.originalSpeed = BOT_SPEED;
+        demoHandCount = 0;
+        const _iSpeeds = Array.isArray(DEMO.introSpeed) ? DEMO.introSpeed : [DEMO.introSpeed];
+        BOT_SPEED = DEMO.introHands > 0 ? _iSpeeds[0] : DEMO.speed;
+        speedIndex = SPEED_STEPS.indexOf(BOT_SPEED);
+        if (speedIndex === -1) speedIndex = 0;
+        updateSpeedDisplay();
+      }
+      setYoloStatus('idle', 'IDLE');
+      setStrategyStatus('ready', 'READY');
+      $hudSource.className = 'hud-status idle';
+      $hudSource.textContent = '\u2014';
+      syncBotUI();
+      botCycle();
+    } else if (!botPaused) {
+      // PAUSE
+      botPaused = true;
+      clearTimeout(botTimer);
+      syncBotUI();
+    } else {
+      // RESUME
+      botPaused = false;
+      hideDemoNotify();
+      // Demo ended during pause → restore original speed
+      if (!DEMO.enabled && DEMO.originalSpeed !== null) {
+        BOT_SPEED = DEMO.originalSpeed;
+        DEMO.originalSpeed = null;
+        speedIndex = SPEED_STEPS.indexOf(BOT_SPEED);
+        if (speedIndex === -1) { speedIndex = 3; BOT_SPEED = 1; }
+        updateSpeedDisplay();
+      }
+      clearTable();
+      olCtx.clearRect(0, 0, 820, 520);
+      syncBotUI();
+      botCycle();
+    }
+  });
+
+  $stopBot.addEventListener('click', stopBot);
+
+  // Spacebar shortcut for pause/resume during presentation
+  document.addEventListener('keydown', function(e) {
+    if (e.code === 'Space' && botRunning && e.target === document.body) {
+      e.preventDefault();
+      // Toggle pause/resume
+      if (!botPaused) {
+        botPaused = true;
+        clearTimeout(botTimer);
+      } else {
+        botPaused = false;
+        hideDemoNotify();
+        // Demo ended during pause → restore original speed
+        if (!DEMO.enabled && DEMO.originalSpeed !== null) {
+          BOT_SPEED = DEMO.originalSpeed;
+          DEMO.originalSpeed = null;
+          speedIndex = SPEED_STEPS.indexOf(BOT_SPEED);
+          if (speedIndex === -1) { speedIndex = 3; BOT_SPEED = 1; }
+          updateSpeedDisplay();
+        }
+        clearTable();
+        olCtx.clearRect(0, 0, 820, 520);
+        botCycle();
+      }
+      syncBotUI();
+    }
+  });
+
+  $resetCount.addEventListener('click', async function() {
+    const resp = await fetch('/api/reset_count', { method: 'POST' });
+    const data = await resp.json();
+    $hudRunning.textContent = data.running_count;
+    $hudTrue.textContent = data.true_count;
+    $hudSeen.textContent = 0;
+  });
+})();
+</script>
+
+<div id="summary-modal-overlay">
+  <div id="summary-modal"></div>
+</div>
+
+</body>
+</html>

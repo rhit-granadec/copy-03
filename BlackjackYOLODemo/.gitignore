@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Virtual environment
+venv/
+
+# macOS
+.DS_Store
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Debug output (generated at runtime)
+debug/
+debug_frames/
+debug_frames_oblong/
+
+# Datasets (download separately)
+getting_data/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Claude Code
+.claude/

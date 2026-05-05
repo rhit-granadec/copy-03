@@ -1,0 +1,302 @@
+{
+  "10c": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "10d": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "10h": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "10s": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "2c": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "2d": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 1,
+    "missed": 0
+  },
+  "2h": {
+    "appeared": 1,
+    "detected": 0,
+    "false_positive": 0,
+    "missed": 1
+  },
+  "2s": {
+    "appeared": 2,
+    "detected": 2,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "3c": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "3d": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "3h": {
+    "appeared": 1,
+    "detected": 0,
+    "false_positive": 1,
+    "missed": 1
+  },
+  "3s": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "4d": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "4h": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 1,
+    "missed": 0
+  },
+  "4s": {
+    "appeared": 2,
+    "detected": 2,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "5c": {
+    "appeared": 2,
+    "detected": 2,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "5d": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "5h": {
+    "appeared": 1,
+    "detected": 0,
+    "false_positive": 0,
+    "missed": 1
+  },
+  "5s": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "6c": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "6d": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "6h": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "6s": {
+    "appeared": 2,
+    "detected": 2,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "7c": {
+    "appeared": 2,
+    "detected": 2,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "7d": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 1,
+    "missed": 0
+  },
+  "7h": {
+    "appeared": 1,
+    "detected": 0,
+    "false_positive": 0,
+    "missed": 1
+  },
+  "7s": {
+    "appeared": 2,
+    "detected": 2,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "8c": {
+    "appeared": 2,
+    "detected": 2,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "8d": {
+    "appeared": 2,
+    "detected": 0,
+    "false_positive": 0,
+    "missed": 2
+  },
+  "8h": {
+    "appeared": 2,
+    "detected": 2,
+    "false_positive": 1,
+    "missed": 0
+  },
+  "8s": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "9c": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "9d": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "9h": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "9s": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "Ac": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "Ad": {
+    "appeared": 2,
+    "detected": 2,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "Ah": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 1,
+    "missed": 0
+  },
+  "As": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "Jc": {
+    "appeared": 2,
+    "detected": 2,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "Jh": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "Js": {
+    "appeared": 2,
+    "detected": 2,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "Kc": {
+    "appeared": 2,
+    "detected": 2,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "Kd": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "Kh": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "Ks": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "Qc": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "Qd": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "Qh": {
+    "appeared": 2,
+    "detected": 2,
+    "false_positive": 0,
+    "missed": 0
+  },
+  "Qs": {
+    "appeared": 1,
+    "detected": 1,
+    "false_positive": 0,
+    "missed": 0
+  }
+}
