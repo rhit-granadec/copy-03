@@ -1,0 +1,13 @@
+test/
+train/
+valid/
+.venv/
+cnn_dataset/
+cnn_dataset_2/
+crops/
+__pycache__/
+playing-cards-object-detection-dataset.zip
+
+runs/
+.ipynb_checkpoints/
+BlackjackYOLODemo/
