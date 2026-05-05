@@ -5,6 +5,7 @@ flask>=3.0.0
 Pillow>=10.0.0
 torch>=2.0.0
 torchvision>=0.15.0
+albumations>=2.2.2
 
 # Optional — only needed for performance/generate_pr_curve.py
 matplotlib>=3.7.0
